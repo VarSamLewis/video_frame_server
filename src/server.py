@@ -146,8 +146,8 @@ class FrameExtractor:
 
         metrics = {
             'num_frames': frame_num,
-            'total_time_s': round(total_time, 3),
-            'ffmpeg_time_s': round(ffmpeg_time, 3),
+            'total_time_ms': round(total_time * 1000, 3),
+            'ffmpeg_time_ms': round(ffmpeg_time * 1000, 3),
             'first_frame_time_ms': round(first_frame_time * 1000, 2) if first_frame_time else None,
             'last_frame_time_ms': round(last_frame_time * 1000, 2) if last_frame_time else None,
             'latency_first_to_last_ms': round((last_frame_time - first_frame_time) * 1000, 2) if (first_frame_time and last_frame_time) else None,
@@ -204,13 +204,16 @@ async def upload_video(video: UploadFile = File(...), background_tasks: Backgrou
             first_frame_data['error'] = str(e)
             first_frame_event.set()
 
+    # Extract base filename without extension
+    base_filename = Path(video.filename).stem
+
     def extract_frames_background():
         """Run frame extraction in background thread"""
         io_times = []
 
         def frame_callback(frame_data, frame_num):
             io_start = time.time()
-            frame_path = os.path.join(extractor.output_dir, f"frame_{frame_num:04d}.jpg")
+            frame_path = os.path.join(extractor.output_dir, f"{base_filename}_{frame_num:02d}.jpg")
             with open(frame_path, 'wb') as f:
                 f.write(frame_data)
             io_times.append(time.time() - io_start)
